@@ -31,20 +31,6 @@ def binary_accuracy(preds, y):
 '''
 
 
-def getBack(var_grad_fn):
-    print(var_grad_fn)
-    for n in var_grad_fn.next_functions:
-        if n[0]:
-            try:
-                tensor = getattr(n[0], 'variable')
-                # print(n[0])
-                # print('Tensor with grad found:', tensor)
-                # print(' - gradient:', tensor.grad)
-                # print()
-            except AttributeError as e:
-                getBack(n[0])
-
-
 def train_func(model, iterator, optimizer, criterion):
     epoch_loss = 0
     epoch_acc = 0
@@ -99,7 +85,7 @@ def evaluate_func(model, iterator, criterion):
 '''
 
 
-def process_model(name, func, model, data, crit, optim = None):
+def process_model(name, func, model, data, crit, optim=None):
     if optim is not None:
         train_loss, train_acc = func(model, data, optim, crit)
     else:
@@ -111,10 +97,21 @@ def process_model(name, func, model, data, crit, optim = None):
     return train_loss, train_acc
 
 
+def save_reses(loss_arr, acc_arr, pair_la):
+    loss_arr.append(pair_la[0])
+    acc_arr.append(pair_la[1])
+
+
 def run_model(model, train, valid, test):
     BATCH_SIZE = 8
     QUANT_BIT = 4
-    N_EPOCHS = 4
+    N_EPOCHS = 8
+
+    train_losses = []
+    train_acces = []
+
+    val_losses = []
+    val_acces = []
 
     train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
         (train, valid, test),
@@ -127,12 +124,10 @@ def run_model(model, train, valid, test):
 
     print("Model created")
 
-    # for name, param in model.named_parameters():
-    #     print(name)
 
     # Обучение
 
-    for epoch in range(N_EPOCHS):
+    for epoch in range(N_EPOCHS//2):
         print(f'Epoch: {epoch + 1:02}')
 
         process_model("Train \t", train_func, model, train_iterator, criterion, optimizer)
@@ -148,19 +143,11 @@ def run_model(model, train, valid, test):
         for _, iter_v in zip(range(3), train_iterator):
             _ = model.train_quant(iter_v.text.cuda())
 
-
-    #
-    model_nt = copy.deepcopy(model)
-
     # Динамическая квантизация
 
     model.set_quantize_layers(True, QUANT_BIT)
     process_model("QuantD TD\t", evaluate_func, model, test_iterator, criterion)
     process_model("QuantD VD\t", evaluate_func, model, valid_iterator, criterion)
-
-    model_nt.set_quantize_layers(True, QUANT_BIT)
-    process_model("QuantD TD\t", evaluate_func, model_nt, test_iterator, criterion)
-    process_model("QuantD VD\t", evaluate_func, model_nt, valid_iterator, criterion)
 
     # Статическая необученная квантизация
 
@@ -168,41 +155,24 @@ def run_model(model, train, valid, test):
     process_model("QuantS TS\t", evaluate_func, model, train_iterator, criterion)
     process_model("QuantS VS\t", evaluate_func, model, valid_iterator, criterion)
 
-    model_nt.set_quantize_layers(True, QUANT_BIT, "static")
-    process_model("QuantS TS\t", evaluate_func, model_nt, train_iterator, criterion)
-    process_model("QuantS VS\t", evaluate_func, model_nt, valid_iterator, criterion)
-
     model.get_scalers()
 
     # Дообучение статики
 
     model.set_quantize_layers(True, QUANT_BIT, "static", True)
 
-    # for name, param in model.named_parameters():
-    #     print(name)
-
-    for epoch in range(N_EPOCHS):
-        print(f'Epoch: {epoch + 1:02}')
+    for epoch in range(N_EPOCHS//2):
+        print(f'Epoch: {epoch + 1 + N_EPOCHS/2:02}')
 
         process_model("Train \t", train_func, model, train_iterator, criterion, optimizer)
         process_model("Val \t", evaluate_func, model, valid_iterator, criterion)
 
-    for epoch in range(N_EPOCHS):
-        print(f'Epoch: {epoch + 1:02}')
-
-        process_model("Train \t", train_func, model_nt, train_iterator, criterion, optimizer)
-        process_model("Val \t", evaluate_func, model_nt, valid_iterator, criterion)
-
     model.get_scalers()
-
 
     # Статическая обученная квантизация
 
     process_model("QuantS TS\t", evaluate_func, model, train_iterator, criterion)
     process_model("QuantS VS\t", evaluate_func, model, valid_iterator, criterion)
-
-    process_model("QuantS TS\t", evaluate_func, model_nt, train_iterator, criterion)
-    process_model("QuantS VS\t", evaluate_func, model_nt, valid_iterator, criterion)
 
     model.set_quantize_layers()
 
