@@ -51,6 +51,7 @@ class CNN(nn.Module):
         input_tensor = input_tensor.permute(1, 0)
 
         embedded = self.embedding(input_tensor)
+
         embedded = embedded.unsqueeze(1)
 
         conved = [F.relu(conv.train_quant(embedded)).squeeze(3) for conv in self.convs]
