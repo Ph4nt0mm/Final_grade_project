@@ -1,4 +1,4 @@
-from models.Xlnet_glue_cola import cola_run
+
 import warnings
 from transformers import logging
 import datasets
@@ -6,6 +6,7 @@ import datasets
 # datasets.logging.set_verbosity_error()
 # logging.set_verbosity_error()
 # warnings.simplefilter("ignore")
+from models.Xlnet_glue import cola_run
 
 if __name__ == '__main__':
     # for i in [None, "dynamic", "static", "staticTr", "staticTrQsin"]:

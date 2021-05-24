@@ -103,7 +103,6 @@ def process_model(name, func, model, data, crit, optim=None):
 def save_reses(loss_arr, acc_arr, pair_la):
     loss_arr.append(float(pair_la[0].data))
     acc_arr.append(float(pair_la[1].data))
-<<<<<<< HEAD:finalGraduate/models/CNN_test/build_model.py
 
 
 def run_model(model, train, valid, test, Qtype = None):
@@ -115,23 +114,6 @@ def run_model(model, train, valid, test, Qtype = None):
     ''' Arrays to save loss and acc on every epoch '''
     val_float_los = []
     val_float_acc = []
-=======
-
-
-def run_model(model, train, valid, test):
-    BATCH_SIZE = 8
-    QUANT_BIT = 3
-    N_EPOCHS = 8
-
-    val_float_los = []
-    val_float_acc = []
-
-    val_dyn_los = []
-    val_dyn_acc = []
-
-    val_sta_los = []
-    val_sta_acc = []
->>>>>>> 8ea7e6fb766de7febbf3cceb9f5b7aa2cc8d1aa3:finalGraduate/build_model.py
 
     ''' Splitting into the batches '''
     train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
@@ -148,11 +130,7 @@ def run_model(model, train, valid, test):
     ''' Rest quntize module? '''
     model.set_quantize_layers()
 
-<<<<<<< HEAD:finalGraduate/models/CNN_test/build_model.py
     append_let = ""
-=======
-    model.set_quantize_layers()
->>>>>>> 8ea7e6fb766de7febbf3cceb9f5b7aa2cc8d1aa3:finalGraduate/build_model.py
 
     # Обучение
     if   Qtype is None or "static" or "staticTr":
@@ -167,18 +145,11 @@ def run_model(model, train, valid, test):
 
         # Train epoch
         process_model("Train \t", train_func, model, train_iterator, criterion, optimizer)
-<<<<<<< HEAD:finalGraduate/models/CNN_test/build_model.py
 
         ''' Changing quantize type '''
 
         save_reses(val_float_los, val_float_acc, process_model("Val" + append_let+" \t",
                                                                evaluate_func, model, valid_iterator, criterion))
-=======
-        save_reses(val_float_los, val_float_acc, process_model("Val \t", evaluate_func, model, valid_iterator, criterion))
-
-        model.set_quantize_layers(True, QUANT_BIT, "dynamic")
-        save_reses(val_dyn_los, val_dyn_acc, process_model("ValD \t", evaluate_func, model, valid_iterator, criterion))
->>>>>>> 8ea7e6fb766de7febbf3cceb9f5b7aa2cc8d1aa3:finalGraduate/build_model.py
 
         model.set_quantize_layers()
 
@@ -190,92 +161,6 @@ def run_model(model, train, valid, test):
         for _, iter_v in zip(range(3), train_iterator):
             _ = model.train_quant(iter_v.text.cuda())
 
-<<<<<<< HEAD:finalGraduate/models/CNN_test/build_model.py
-=======
-    # # Динамическая квантизация
-    #
-    # model.set_quantize_layers(True, QUANT_BIT, "dynamic")
-    # process_model("QuantD TD\t", evaluate_func, model, test_iterator, criterion)
-    # process_model("QuantD VD\t", evaluate_func, model, valid_iterator, criterion)
-
-    # Статическая необученная квантизация
-
-    model.set_quantize_layers(True, QUANT_BIT, "static")
-    save_reses(val_sta_los, val_sta_acc, process_model("ValS VS\t", evaluate_func, model, valid_iterator, criterion))
-
-    # Дообучение статики
-
-    model.set_quantize_layers()
-    #
-    for epoch in range(N_EPOCHS//2):
-        print(f'Epoch: {epoch + 1 + N_EPOCHS/2:02}')
-
-        process_model("Train \t", train_func, model, train_iterator, criterion, optimizer)
-        save_reses(val_float_los, val_float_acc, process_model("Val \t", evaluate_func, model, valid_iterator, criterion))
-
-        model.set_quantize_layers(True, QUANT_BIT, "dynamic")
-        save_reses(val_dyn_los, val_dyn_acc, process_model("ValD \t", evaluate_func, model, valid_iterator, criterion))
-        model.set_quantize_layers(True, QUANT_BIT, "static")
-        save_reses(val_sta_los, val_sta_acc, process_model("ValS \t", evaluate_func, model, valid_iterator, criterion))
-
-        model.set_quantize_layers()
-
-    # Статическая обученная квантизация
-
-    # process_model("QuantS TS\t", evaluate_func, model, train_iterator, criterion)
-    # process_model("QuantS VS\t", evaluate_func, model, valid_iterator, criterion)
-    #
-    # model.set_quantize_layers()
-
-    return (np.array(val_float_los), np.array(val_dyn_los), np.array(val_sta_los)), \
-           (np.array(val_float_acc), np.array(val_dyn_acc), np.array(val_sta_acc))
-
-
-def run_model_train_quant(model, train, valid, test):
-    BATCH_SIZE = 8
-    QUANT_BIT = 3
-    N_EPOCHS = 8
-
-    val_float_los = []
-    val_float_acc = []
-
-    train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
-        (train, valid, test),
-        batch_size=BATCH_SIZE,
-        sort_key=lambda x: len(x.text),
-        repeat=False)
-
-    optimizer = optim.Adam(model.parameters())
-    criterion = nn.BCEWithLogitsLoss()
-
-    print("Model created")
-
-    model.set_quantize_layers()
-
-    # Обучение
-
-    for epoch in range(N_EPOCHS//2):
-        print(f'Epoch: {epoch + 1:02}')
-
-        process_model("Train \t", train_func, model, train_iterator, criterion, optimizer)
-        save_reses(val_float_los, val_float_acc, process_model("Val \t", evaluate_func, model, valid_iterator, criterion))
-
-    # Подсчет скаляров
-
-    model.eval()
-
-    with torch.no_grad():
-        for _, iter_v in zip(range(3), train_iterator):
-            _ = model.train_quant(iter_v.text.cuda())
-
-    # # Динамическая квантизация
-    #
-    # model.set_quantize_layers(True, QUANT_BIT, "dynamic")
-    # process_model("QuantD TD\t", evaluate_func, model, test_iterator, criterion)
-    # process_model("QuantD VD\t", evaluate_func, model, valid_iterator, criterion)
-
-
->>>>>>> 8ea7e6fb766de7febbf3cceb9f5b7aa2cc8d1aa3:finalGraduate/build_model.py
     # Дообучение статики
 
     # append_let - строка, использующаяся только для вывода статистики
@@ -298,24 +183,11 @@ def run_model_train_quant(model, train, valid, test):
         print(f'Epoch: {epoch + 1 + N_EPOCHS/2:02}')
 
         process_model("Train \t", train_func, model, train_iterator, criterion, optimizer)
-<<<<<<< HEAD:finalGraduate/models/CNN_test/build_model.py
         save_reses(val_float_los, val_float_acc, process_model("Val" + append_let + " \t",
                                                                evaluate_func, model, valid_iterator, criterion))
 
     return val_float_los, val_float_acc
 
-=======
-        save_reses(val_float_los, val_float_acc, process_model("Val \t", evaluate_func, model, valid_iterator, criterion))
-
-    # Статическая обученная квантизация
-
-    # process_model("QuantS TS\t", evaluate_func, model, train_iterator, criterion)
-    # process_model("QuantS VS\t", evaluate_func, model, valid_iterator, criterion)
-    #
-    # model.set_quantize_layers()
-
-    return np.array(val_float_los), np.array(val_float_acc)
->>>>>>> 8ea7e6fb766de7febbf3cceb9f5b7aa2cc8d1aa3:finalGraduate/build_model.py
 
 
 ''' 
@@ -326,11 +198,6 @@ def run_model_train_quant(model, train, valid, test):
 '''
 
 
-<<<<<<< HEAD:finalGraduate/models/CNN_test/build_model.py
-=======
-import matplotlib.pyplot as plt
-import numpy as np
->>>>>>> 8ea7e6fb766de7febbf3cceb9f5b7aa2cc8d1aa3:finalGraduate/build_model.py
 
 def run_compare():
     warnings.filterwarnings("ignore")
@@ -414,116 +281,3 @@ def run_compare():
 
     # return s0, s1, s2, s3
 
-<<<<<<< HEAD:finalGraduate/models/CNN_test/build_model.py
-=======
-    sf = []
-
-    sf.append(run_model(model, train, valid, test))
-
-    model = CNN(len(TEXT.vocab), EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT)
-    model.embedding.weight.data.copy_(TEXT.vocab.vectors)
-    model = model.cuda()
-
-    sf.append(run_model(model, train, valid, test))
-
-    model = CNN(len(TEXT.vocab), EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT)
-    model.embedding.weight.data.copy_(TEXT.vocab.vectors)
-    model = model.cuda()
-
-    sf.append(run_model(model, train, valid, test))
-
-    model = CNN(len(TEXT.vocab), EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT)
-    model.embedding.weight.data.copy_(TEXT.vocab.vectors)
-    model = model.cuda()
-
-    sf.append(run_model(model, train, valid, test))
-
-    model = CNN(len(TEXT.vocab), EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT)
-    model.embedding.weight.data.copy_(TEXT.vocab.vectors)
-    model = model.cuda()
-
-    sf.append(run_model(model, train, valid, test))
-
-    model = CNN(len(TEXT.vocab), EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT)
-    model.embedding.weight.data.copy_(TEXT.vocab.vectors)
-    model = model.cuda()
-
-    ss = []
-
-    ss.append(run_model_train_quant(model, train, valid, test))
-
-    model = CNN(len(TEXT.vocab), EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT)
-    model.embedding.weight.data.copy_(TEXT.vocab.vectors)
-    model = model.cuda()
-
-    ss.append(run_model_train_quant(model, train, valid, test))
-
-    model = CNN(len(TEXT.vocab), EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT)
-    model.embedding.weight.data.copy_(TEXT.vocab.vectors)
-    model = model.cuda()
-
-    ss.append(run_model_train_quant(model, train, valid, test))
-
-    model = CNN(len(TEXT.vocab), EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT)
-    model.embedding.weight.data.copy_(TEXT.vocab.vectors)
-    model = model.cuda()
-
-    ss.append(run_model_train_quant(model, train, valid, test))
-
-    model = CNN(len(TEXT.vocab), EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT)
-    model.embedding.weight.data.copy_(TEXT.vocab.vectors)
-    model = model.cuda()
-
-    ss.append(run_model_train_quant(model, train, valid, test))
-
-    N_FROM = 3
-    N_TO = 8
-    # print (sf, ss)
-
-    plt.figure()
-    for i in sf:
-        plt.subplot(211)
-        plt.plot(i[0][0], color="lightpink")
-        plt.plot(i[0][1], color="lightgreen")
-        plt.plot(range(N_FROM, N_TO), i[0][2], color="lightblue")
-
-        plt.subplot(212)
-        plt.plot(i[1][0], color="lightpink")
-        plt.plot(i[1][1], color="lightgreen")
-        plt.plot(range(N_FROM, N_TO), i[1][2], color="lightblue")
-
-    plt.subplot(211)
-    plt.ylabel('loss')
-
-    plt.plot(np.mean(np.array(sf)[:,0], axis=0)[0], label="mean float", color="deeppink")
-    plt.plot(np.mean(np.array(sf)[:,0], axis=0)[1], label="mean dynam", color="darkgreen")
-    plt.plot(range(N_FROM, N_TO), np.mean(np.array(sf)[:,0], axis=0)[2], label="mean stat", color="darkblue")
-
-    plt.subplot(212)
-    plt.ylabel('acc')
-    plt.xlabel('n iter')
-    plt.plot(np.mean(np.array(sf)[:,1], axis=0)[0], label="mean float", color="deeppink")
-    plt.plot(np.mean(np.array(sf)[:,1], axis=0)[1], label="mean dynam", color="darkgreen")
-    plt.plot(range(N_FROM, N_TO), np.mean(np.array(sf)[:,1], axis=0)[2], label="mean stat", color="darkblue")
-    plt.legend()
-    plt.show()
-
-    plt.figure()
-    for i in ss:
-        plt.subplot(211)
-        plt.ylabel('loss')
-        plt.plot(i[0])
-
-        plt.subplot(212)
-        plt.ylabel('acc')
-        plt.plot(i[1])
-    plt.show()
-
-def my_plotter(data, align):
-    r'''
-
-    :param data: np array with sizes N_MODELS x 2 x N_ITERS
-    :param align:
-    :return:
-    '''
->>>>>>> 8ea7e6fb766de7febbf3cceb9f5b7aa2cc8d1aa3:finalGraduate/build_model.py
